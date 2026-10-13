@@ -1,0 +1,1099 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style><title>Feeless Catch</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: playfield on the left, leaderboard and donation ticket stacked on the right; one column on phones. */
+:root {
+  --bg: #eef2f8;
+  --surface: #ffffff;
+  --ink: #0e1a2e;
+  --muted: #55627a;
+  --line: #d3dbe8;
+  --accent: #2563d9;
+  --accent-ink: #ffffff;
+  --bad: #d1453b;
+  --field: #e3eaf6;
+  --font-display: "Bricolage Grotesque", "Helvetica Neue", Arial, sans-serif;
+  --font-body: "Bricolage Grotesque", "Helvetica Neue", Arial, sans-serif;
+  --font-data: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0a111d; --surface: #111b2c; --ink: #e6edf8; --muted: #93a1b8; --line: #223149;
+    --accent: #5b92ff; --accent-ink: #06101f; --bad: #ff7066; --field: #0d1626;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0a111d; --surface: #111b2c; --ink: #e6edf8; --muted: #93a1b8; --line: #223149;
+  --accent: #5b92ff; --accent-ink: #06101f; --bad: #ff7066; --field: #0d1626;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink);
+  font: 16px/1.5 var(--font-body);
+  padding-inline: 16px; padding-block: 24px 40px;
+}
+.wrap { max-width: 980px; margin-inline: auto; display: flex; flex-direction: column; gap: 24px; }
+header h1 {
+  font-family: var(--font-display); font-weight: 800; font-size: clamp(2rem, 6vw, 3.2rem);
+  line-height: 1; letter-spacing: -0.02em; margin: 0 0 8px; text-wrap: balance;
+}
+header p { margin: 0; color: var(--muted); max-width: 52ch; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 24px; align-items: start; }
+.grid > * { min-width: 0; }
+.side { display: flex; flex-direction: column; gap: 24px; }
+
+/* Game */
+.stage { display: flex; flex-direction: column; gap: 8px; max-width: 420px; width: 100%; margin-inline: auto; }
+.hud { display: flex; justify-content: space-between; align-items: baseline; font-family: var(--font-data); font-size: 0.9rem; font-variant-numeric: tabular-nums; }
+.hud b { font-family: var(--font-display); font-size: 1.6rem; font-weight: 800; }
+.hud .lives { color: var(--bad); letter-spacing: 0.15em; }
+.hud2 { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-family: var(--font-data); font-size: 0.8rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.hud2 button { font: 0.78rem var(--font-data); padding: 3px 9px; border-radius: 3px; color: var(--muted); }
+.hud2 button:disabled { opacity: 0.5; cursor: not-allowed; }
+.ctl { display: flex; gap: 6px; }
+.board { position: relative; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: var(--field); touch-action: none; width: min(100%, max(220px, calc((100dvh - 250px) * 0.6923))); margin-inline: auto; }
+canvas { display: block; width: 100%; height: auto; aspect-ratio: 360 / 520; max-width: 100%; }
+.overlay {
+  position: absolute; inset: 0; display: flex; overflow-y: auto; padding: 16px; text-align: center;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+}
+.overlay h2 { font-family: var(--font-display); font-weight: 800; font-size: 1.6rem; line-height: 1.1; margin: 0; text-wrap: balance; }
+.overlay p { margin: 0; color: var(--muted); font-size: 0.9rem; }
+.overlay .note { color: var(--accent); font-size: 0.85rem; min-height: 1.2em; overflow-wrap: anywhere; }
+.block { display: flex; flex-direction: column; align-items: center; gap: 12px; margin: auto; width: 100%; }
+.row { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+.qr2 { background: #fff; padding: 6px; border-radius: 4px; border: 1px solid var(--line); line-height: 0; }
+button, .btn {
+  font: 500 0.95rem var(--font-body); cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; justify-content: center;
+  padding: 10px 18px; border-radius: 4px; border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+}
+button.primary, .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 800; }
+button:focus-visible, .btn:focus-visible, input:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.hint { font-size: 0.82rem; color: var(--muted); margin: 0; }
+.fieldpause { position: absolute; top: 8px; right: 8px; width: 44px; height: 44px; padding: 0; border-radius: 50%; font: 800 14px var(--font-data); letter-spacing: -1px; background: color-mix(in srgb, var(--surface) 80%, transparent); color: var(--ink); z-index: 1; }
+.fieldpause:disabled { display: none; }
+.rules { border: 1px solid var(--line); border-radius: 6px; background: var(--surface); }
+.rules summary { cursor: pointer; padding: 10px 14px; font-weight: 800; }
+.rules summary:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.rules-body { padding: 0 14px 14px; display: flex; flex-direction: column; gap: 10px; font-size: 0.85rem; color: var(--muted); }
+.rules-body h3 { margin: 6px 0 0; font-family: var(--font-data); font-size: 0.75rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink); }
+.rules-body p { margin: 0; }
+.key { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 8px 14px; font-size: 0.82rem; color: var(--muted); }
+.key .it { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.key .tag { flex: none; min-width: 44px; padding: 4px; border-radius: 5px; text-align: center; color: #fff; font: 800 10px var(--font-data); }
+.key .tag.round { border-radius: 50%; min-width: 26px; width: 26px; height: 26px; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 13px; }
+
+/* Cards */
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+.card h2 { font-family: var(--font-display); font-weight: 800; font-size: 1.4rem; margin: 0; line-height: 1.15; }
+.card p { margin: 0; color: var(--muted); font-size: 0.95rem; }
+.namebox { display: flex; flex-direction: column; gap: 6px; }
+.namebox label { font-size: 0.85rem; color: var(--muted); }
+.namebox input {
+  font: 0.95rem var(--font-data); padding: 9px 10px; border: 1px solid var(--line); border-radius: 4px;
+  background: var(--field); color: var(--ink); width: 100%; max-width: 240px;
+}
+ol.scores { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; font-family: var(--font-data); font-size: 0.9rem; font-variant-numeric: tabular-nums; }
+ol.scores li { display: grid; grid-template-columns: 2.2em 1fr auto; gap: 8px; padding: 7px 8px; border-bottom: 1px solid var(--line); }
+ol.scores li:last-child { border-bottom: 0; }
+ol.scores li .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+ol.scores li.me { background: var(--field); font-weight: 500; }
+ol.scores li .rk { color: var(--muted); }
+.bestrow { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.bignum { font-family: var(--font-display); font-weight: 800; font-size: 2.6rem; line-height: 1; font-variant-numeric: tabular-nums; }
+.bestsub { font-family: var(--font-data); font-size: 0.85rem; color: var(--muted); }
+.buy { border: 1px solid var(--line); border-radius: 6px; padding: 14px; display: flex; flex-direction: column; gap: 10px; background: var(--field); }
+.buy[hidden] { display: none; }
+.buy h3 { margin: 0; font-family: var(--font-display); font-size: 1.1rem; }
+.buy .qr3 { background: #fff; padding: 6px; border-radius: 4px; line-height: 0; align-self: flex-start; }
+.skin .pv { display: block; width: 100%; height: auto; aspect-ratio: 104 / 56; }
+.skins { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; }
+.skin { display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; gap: 6px; padding: 8px; text-align: left; font-size: 0.8rem; min-width: 0; }
+.skin .sw { display: block; height: 22px; border-radius: 5px; position: relative; }
+.skin .sw::after { content: ""; position: absolute; right: 4px; top: 5px; width: 10px; height: 12px; border-radius: 3px; background: var(--clasp); }
+.skin .nm { font-weight: 800; }
+.skin .sub { color: var(--muted); font-family: var(--font-data); font-size: 0.72rem; }
+.skin[aria-pressed="true"] { border-color: var(--accent); outline: 2px solid var(--accent); }
+.skin:disabled { opacity: 0.55; cursor: not-allowed; }
+.amounts { display: flex; flex-wrap: wrap; gap: 8px; }
+.amounts button { font-family: var(--font-data); font-size: 0.85rem; padding: 8px 12px; }
+.amounts button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.pay { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; }
+.qr { background: #fff; padding: 10px; border-radius: 4px; border: 1px solid var(--line); line-height: 0; flex: none; }
+.qr img, .qr canvas, .qr2 img, .qr2 canvas { max-width: 100%; height: auto; }
+.addr-box { flex: 1 1 200px; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+.addr {
+  font-family: var(--font-data); font-size: 0.8rem; word-break: break-all; user-select: all;
+  background: var(--field); border: 1px solid var(--line); border-radius: 4px; padding: 10px;
+}
+.status { font-size: 0.85rem; min-height: 1.3em; color: var(--accent); }
+.facts { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; margin: 0; font-size: 0.85rem; }
+.facts dt { font-family: var(--font-data); color: var(--muted); }
+.facts dd { margin: 0; }
+footer { color: var(--muted); font-size: 0.8rem; }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style></head><body>
+
+<div class="wrap">
+  <header>
+    <h1>Feeless Catch</h1>
+    <p>Catch the coins and dodge the fee blocks. Nano has no transaction fees, and neither does this game.</p>
+  </header>
+
+  <div class="grid">
+    <section class="stage" aria-label="Game">
+      <div class="hud">
+        <span>Score <b id="score">0</b></span>
+        <span class="lives" id="lives" aria-label="Lives">♥♥♥</span>
+        <span>Best <b id="best">0</b></span>
+      </div>
+      <div class="hud2">
+        <span id="lvl">Level 1</span>
+        <span class="ctl">
+          <button id="pause" type="button" disabled>Pause</button>
+          <button id="mute" type="button" aria-pressed="false">Sound on</button>
+        </span>
+        <span id="mult">Streak 0 · x1</span>
+      </div>
+      <div class="board" id="board">
+        <canvas id="cv" width="720" height="1040" aria-label="Game field. Drag or use the arrow keys to move the wallet."></canvas>
+        <button class="fieldpause" id="fpause" type="button" aria-label="Pause" disabled>II</button>
+        <div class="overlay" id="overlay">
+          <div class="block" id="normal">
+            <h2 id="ov-title">Catch the coins. Dodge the fees.</h2>
+            <p id="ov-text">Drag, or use the arrow keys, to move your wallet. Gold coins are worth 5 and hearts give back a life. Power-ups start dropping from level 2. There's a key to everything that falls below the field.</p>
+            <p class="note" id="ov-board" role="status"></p>
+            <div class="row">
+              <button class="primary" id="play">Play</button>
+              <button id="cont" hidden>Extra life · 0.05 XNO</button>
+              <button id="share" hidden>Share score</button>
+              <button id="finish" hidden>Finish</button>
+              <button id="to-donate" hidden>Support this game</button>
+            </div>
+          </div>
+          <div class="block" id="paystep" hidden>
+            <h2>Extra life</h2>
+            <p>Send 0.05 XNO to carry on with one more life and keep your score.</p>
+            <div class="qr2" id="qr2"></div>
+            <div class="row">
+              <button id="copy2">Copy address</button>
+              <button class="primary" id="paid">I've sent it, continue</button>
+              <button id="back">No thanks</button>
+            </div>
+            <p class="note" id="status2" role="status"></p>
+          </div>
+          <div class="block" id="pausebox" hidden>
+            <h2>Paused</h2>
+            <p>Your run is waiting. Take your time.</p>
+            <div class="row"><button class="primary" id="resume-btn">Resume</button></div>
+          </div>
+        </div>
+      </div>
+      <p class="hint">Catch coins in a row to build a streak and multiply your points. Catching a fee resets the streak, but letting a coin go doesn't. The game speeds up and the scenery changes as you level up. Reach a 20-catch streak for a 5-second frenzy of double points. Press P or Esc to pause.</p>
+      <div class="key" id="key" aria-label="Key to everything that falls"></div>
+      <details class="rules" id="rules">
+        <summary>All the rules</summary>
+        <div class="rules-body">
+          <h3>Playing</h3>
+          <p>Move your wallet by dragging on the field, or with the arrow keys (or A and D). Catch the good things and dodge the red fee blocks. Press P or Esc, or the pause button, to pause.</p>
+          <h3>Lives</h3>
+          <p>You start with 3 lives. Catching a fee costs one life. Hearts give one back, up to 3. The run ends when you reach 0.</p>
+          <h3>Points, streak and multiplier</h3>
+          <p>A coin is worth 1 point and a gold coin 5. Your streak counts the catches in a row since you last caught a fee. Letting a coin go does not break it. Every 6 catches in the streak adds 1 to your multiplier, up to x5.</p>
+          <h3>Frenzy</h3>
+          <p>Every 20 catches in a row starts a 5-second frenzy where all points double.</p>
+          <h3>Levels</h3>
+          <p>You level up every 9 coins you catch. Each level makes things fall faster and more often, and brings more fee blocks. From level 3, some fee blocks drift sideways and items sometimes fall in pairs. The scenery changes at levels 3, 5, 7 and 9.</p>
+          <h3>Power-ups</h3>
+          <p>From level 2, a power-up badge sometimes falls. Catch it to switch it on. Only one badge falls at a time, and the key above shows what each one does and how long it lasts. The shield lasts until it blocks one fee, or until its time runs out. Big and mini wallet cancel each other out, and the mini wallet is the rarest. Your streak multiplier, the mini wallet and a frenzy all multiply together. From level 3, a rare broccoli also falls. Catch it and every fee on screen turns into a coin for 5 seconds, and new fees turn into coins too. It never stacks with a badge already on screen, and it can't turn a fee you've already caught back into a life.</p>
+          <h3>Extra life</h3>
+          <p>When a run ends, you can send 0.05 XNO for one extra life. You carry on with 1 life and keep your score, but your streak and power-ups reset. It works once per run.</p>
+          <h3>Wallet skins</h3>
+          <p>A skin unlocks when your best score on this device reaches its score: <span id="rule-skins"></span>. Four silly skins (Rubber Duck, Pizza Box, Odd Sock and Disco) cost 0.1 XNO each and stay unlocked on this device.</p>
+          <h3>Best score</h3>
+          <p>Your best score and highest level are saved on this device and shown in the Your best score card.</p>
+          <h3>Donations</h3>
+          <p>Donating is optional. Every donation goes straight to the creator's Nano wallet, and Nano has no fees.</p>
+        </div>
+      </details>
+    </section>
+
+    <div class="side">
+      <section class="card" aria-label="Best score">
+        <h2>Your best score</h2>
+        <div class="bestrow"><span class="bignum" id="best-big">0</span><span class="bestsub" id="best-sub"></span></div>
+        <p>Saved on this device. Beat it to unlock new wallet skins.</p>
+      </section>
+
+      <section class="card" aria-label="Wallet skins">
+        <h2>Wallet skins</h2>
+        <div class="skins" id="skins" role="group" aria-label="Wallet skins"></div>
+        <div class="buy" id="buy" hidden>
+          <h3 id="buy-title"></h3>
+          <p id="buy-text"></p>
+          <div class="qr3" id="qr3"></div>
+          <div class="row" style="justify-content:flex-start">
+            <button id="copy3">Copy address</button>
+            <button class="primary" id="buy-ok">I've sent it, unlock</button>
+            <button id="buy-cancel">Not now</button>
+          </div>
+          <p class="note" id="status3" role="status" style="color:var(--accent)"></p>
+        </div>
+        <p id="skin-note"></p>
+      </section>
+
+      <aside class="card" id="donate" aria-label="Donate XNO">
+        <h2>Enjoyed it? Send some XNO.</h2>
+        <p>Donations are optional and go straight to the creator's Nano wallet. Transfers settle in seconds with no fee.</p>
+        <div class="amounts" role="group" aria-label="Amount">
+          <button type="button" data-amt="" aria-pressed="true">Any amount</button>
+          <button type="button" data-amt="0.01" aria-pressed="false">0.01 XNO</button>
+          <button type="button" data-amt="0.05" aria-pressed="false">0.05 XNO</button>
+          <button type="button" data-amt="0.1" aria-pressed="false">0.1 XNO</button>
+        </div>
+        <div class="pay">
+          <div class="qr" id="qr"></div>
+          <div class="addr-box">
+            <div class="addr" id="addr"></div>
+            <div class="row" style="justify-content:flex-start">
+              <button class="primary" id="copy">Copy address</button>
+            </div>
+            <div class="status" id="status" role="status"></div>
+            <p class="hint" id="pay-hint"></p>
+          </div>
+        </div>
+        <dl class="facts">
+          <dt>Currency</dt><dd>XNO (Nano)</dd>
+          <dt>Fee</dt><dd>0</dd>
+          <dt>Unit</dt><dd>1 XNO = 10³⁰ raw</dd>
+        </dl>
+      </aside>
+    </div>
+  </div>
+
+  <footer>Only send XNO to the address written above. Transfers on the Nano network cannot be reversed.</footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var NANO_ADDRESS = "nano_3a7e3irpbpxbh1n7dk9u3cm9tnd97q1unjxn67ni9gijoxfmzguitx1xgc9u";
+  var GAME_URL = location.href.split("#")[0];
+  var qr = null, qr2 = null, amount = "";
+
+  function lsGet(k, d) { try { var v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } }
+  function lsSet(k, v) { try { localStorage.setItem(k, String(v)); } catch (e) {} }
+
+  // ---- Sound ----------------------------------------------------------
+  var AC = null, muted = lsGet("fc-mute", "0") === "1";
+  function audio() {
+    if (AC === null) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { AC = false; } }
+    if (AC && AC.state === "suspended") { try { AC.resume(); } catch (e) {} }
+    return AC;
+  }
+  function tone(freq, dur, type, vol, slideTo, delay) {
+    if (muted) return;
+    var a = audio(); if (!a) return;
+    try {
+      var t = a.currentTime + (delay || 0);
+      var o = a.createOscillator(), g = a.createGain();
+      o.type = type || "sine";
+      o.frequency.setValueAtTime(freq, t);
+      if (slideTo) o.frequency.exponentialRampToValueAtTime(Math.max(30, slideTo), t + dur);
+      g.gain.setValueAtTime(vol || 0.08, t);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(g); g.connect(a.destination);
+      o.start(t); o.stop(t + dur + 0.03);
+    } catch (e) {}
+  }
+  var sfx = {
+    coin: function (streak) { tone(660 + Math.min(streak, 20) * 28, 0.08, "triangle", 0.09); },
+    gold: function () { tone(880, 0.1, "triangle", 0.1); tone(1320, 0.14, "triangle", 0.1, 0, 0.08); },
+    heart: function () { tone(520, 0.1, "sine", 0.1); tone(780, 0.16, "sine", 0.1, 0, 0.09); },
+    fee: function () { tone(190, 0.3, "sawtooth", 0.1, 70); },
+    shield: function () { tone(1200, 0.14, "square", 0.05, 600); },
+    power: function () { tone(400, 0.2, "square", 0.05, 1000); },
+    level: function () { tone(523, 0.1, "triangle", 0.1); tone(659, 0.1, "triangle", 0.1, 0, 0.1); tone(784, 0.2, "triangle", 0.1, 0, 0.2); },
+    start: function () { tone(523, 0.1, "triangle", 0.09); tone(784, 0.14, "triangle", 0.09, 0, 0.1); },
+    over: function () { tone(330, 0.55, "triangle", 0.1, 90); },
+    frenzy: function () { tone(523, 0.08, "square", 0.06); tone(659, 0.08, "square", 0.06, 0, 0.08); tone(784, 0.08, "square", 0.06, 0, 0.16); tone(1047, 0.2, "square", 0.06, 0, 0.24); },
+    extra: function () { tone(440, 0.1, "triangle", 0.09); tone(660, 0.1, "triangle", 0.09, 0, 0.1); tone(990, 0.18, "triangle", 0.09, 0, 0.2); }
+  };
+  function renderMute() {
+    $("mute").textContent = muted ? "Sound off" : "Sound on";
+    $("mute").setAttribute("aria-pressed", muted ? "true" : "false");
+  }
+  renderMute();
+  $("mute").addEventListener("click", function () {
+    muted = !muted; lsSet("fc-mute", muted ? "1" : "0"); renderMute();
+    if (!muted) { audio(); tone(660, 0.08, "triangle", 0.08); }
+  });
+
+  // ---- Donation panel -------------------------------------------------
+  function toRaw(xno) {
+    var parts = xno.split(".");
+    var frac = ((parts[1] || "") + "000000000000000000000000000000").slice(0, 30);
+    return (BigInt(parts[0]) * 10n ** 30n + BigInt(frac)).toString();
+  }
+  function uriFor(amt) { return "nano:" + NANO_ADDRESS + (amt ? "?amount=" + toRaw(amt) : ""); }
+  function renderPay() {
+    $("addr").textContent = NANO_ADDRESS;
+    $("pay-hint").textContent = amount
+      ? "Scan the code with your Nano wallet to send " + amount + " XNO, or copy the address and enter the amount yourself."
+      : "Scan the code with your Nano wallet, or copy the address and choose any amount.";
+    var text = uriFor(amount);
+    try {
+      if (!qr) { qr = new QRCode($("qr"), { text: text, width: 168, height: 168, colorDark: "#000000", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.M }); }
+      else { qr.clear(); qr.makeCode(text); }
+    } catch (e) { $("qr").style.display = "none"; }
+  }
+  renderPay();
+  function pickAmount(btn) {
+    document.querySelectorAll(".amounts button").forEach(function (o) { o.setAttribute("aria-pressed", "false"); });
+    btn.setAttribute("aria-pressed", "true");
+    amount = btn.getAttribute("data-amt");
+    renderPay();
+  }
+  document.querySelectorAll(".amounts button").forEach(function (b) { b.addEventListener("click", function () { pickAmount(b); }); });
+
+  function copyText(text, onOk, onFail) {
+    try { navigator.clipboard.writeText(text).then(onOk, onFail); }
+    catch (e) { onFail(); }
+  }
+  function copyAddress(statusEl) {
+    copyText(NANO_ADDRESS,
+      function () { statusEl.textContent = "Address copied."; },
+      function () {
+        var r = document.createRange(); r.selectNodeContents($("addr"));
+        var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
+        statusEl.textContent = "Address selected. Press copy on your device.";
+      });
+  }
+  $("copy").addEventListener("click", function () { copyAddress($("status")); });
+  $("copy2").addEventListener("click", function () { copyAddress($("status2")); });
+
+  function goDonate(amt) {
+    if (amt !== undefined) {
+      var b = document.querySelector('.amounts button[data-amt="' + amt + '"]');
+      if (b) pickAmount(b);
+    }
+    $("donate").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  $("to-donate").addEventListener("click", function () { goDonate(); });
+
+  // ---- Game -----------------------------------------------------------
+  var W = 360, H = 520;
+  var cv = $("cv"), ctx = cv.getContext("2d");
+  ctx.scale(2, 2);
+  var C = {};
+  function readColors() {
+    var cs = getComputedStyle(document.documentElement);
+    ["--accent", "--accent-ink", "--bad", "--ink", "--field", "--line"].forEach(function (k) { C[k] = cs.getPropertyValue(k).trim(); });
+  }
+  readColors();
+
+  var GOLD = "#e8a317", GOLD_DARK = "#a86f05";
+  var PU = {
+    magnet: { color: "#8b5cf6", tag: "MAG", name: "MAGNET", dur: 6, w: 1 },
+    shield: { color: "#10b981", tag: "SHD", name: "SHIELD", dur: 7, w: 1 },
+    slow:   { color: "#ec4899", tag: "SLO", name: "SLOW-MO", dur: 5.4, w: 1 },
+    grow:   { color: "#f97316", tag: "BIG", name: "BIG WALLET", dur: 8, w: 1 },
+    mini:   { color: "#475569", tag: "MINI", name: "MINI x2", dur: 9, w: 0.3 },
+    feeless: { color: "#16a34a", tag: "BRO", name: "FEELESS", dur: 5, w: 0 }
+  };
+  var PU_KINDS = Object.keys(PU);
+  function pickKind() {
+    var total = 0, i;
+    for (i = 0; i < PU_KINDS.length; i++) total += PU[PU_KINDS[i]].w;
+    var r = Math.random() * total;
+    for (i = 0; i < PU_KINDS.length; i++) { r -= PU[PU_KINDS[i]].w; if (r <= 0) return PU_KINDS[i]; }
+    return PU_KINDS[0];
+  }
+  var STAGES = [
+    { name: "", tint: null, a: 0 },
+    { name: "Skyline", tint: "#8b5cf6", a: 0.12 },
+    { name: "Rain", tint: "#0ea5e9", a: 0.14 },
+    { name: "Night sky", tint: "#4338ca", a: 0.2 },
+    { name: "The network", tint: "#10b981", a: 0.14 }
+  ];
+  function stageOf(L) { return L < 3 ? 0 : L < 5 ? 1 : L < 7 ? 2 : L < 9 ? 3 : 4; }
+
+  var decor = { b: [], r: [], s: [], n: [] };
+  (function () {
+    var i, x = -10;
+    while (x < W) { var w = 34 + Math.random() * 18; decor.b.push({ x: x, w: w, h: 50 + Math.random() * 80 }); x += w + 4; }
+    for (i = 0; i < 30; i++) decor.r.push({ x: Math.random() * W, y: Math.random() * H, l: 12 + Math.random() * 14, v: 260 + Math.random() * 180 });
+    for (i = 0; i < 40; i++) decor.s.push({ x: Math.random() * W, y: Math.random() * (H - 120), r: 0.8 + Math.random() * 1.4, p: Math.random() * 6 });
+    for (i = 0; i < 14; i++) decor.n.push({ x: 30 + Math.random() * (W - 60), y: 30 + Math.random() * (H - 160), ax: 14 + Math.random() * 24, ay: 14 + Math.random() * 24, p: Math.random() * 6 });
+  })();
+
+  var best = parseInt(lsGet("fc-best", "0"), 10) || 0;
+  $("best").textContent = best;
+
+  // ---- Best score and wallet skins ------------------------------------------
+  var bestLevel = parseInt(lsGet("fc-bestlevel", "1"), 10) || 1;
+  function renderBest() {
+    $("best-big").textContent = best;
+    $("best-sub").textContent = "Highest level " + bestLevel;
+  }
+  renderBest();
+
+  // ---- Drawn wallet skins (local wallet space: 104 wide, 38 tall; y may go above 0) ----
+  function rrect(c, x, y, w, h, r) {
+    c.beginPath();
+    c.moveTo(x + r, y);
+    c.lineTo(x + w - r, y); c.quadraticCurveTo(x + w, y, x + w, y + r);
+    c.lineTo(x + w, y + h - r); c.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    c.lineTo(x + r, y + h); c.quadraticCurveTo(x, y + h, x, y + h - r);
+    c.lineTo(x, y + r); c.quadraticCurveTo(x, y, x + r, y);
+    c.closePath();
+  }
+  var ART = {
+    duck: function (c) {
+      c.fillStyle = "#facc15";
+      c.beginPath(); c.moveTo(8, 22); c.lineTo(-2, 10); c.lineTo(17, 16); c.closePath(); c.fill();
+      c.beginPath(); c.ellipse(50, 24, 46, 14, 0, 0, Math.PI * 2); c.fill();
+      c.beginPath(); c.arc(84, 9, 11, 0, Math.PI * 2); c.fill();
+      c.fillStyle = "#eab308"; c.beginPath(); c.ellipse(46, 26, 20, 8, -0.15, 0, Math.PI * 2); c.fill();
+      c.fillStyle = "#f97316"; c.beginPath(); c.moveTo(93, 4); c.lineTo(107, 10); c.lineTo(93, 15); c.closePath(); c.fill();
+      c.fillStyle = "#111827"; c.beginPath(); c.arc(86, 6, 1.9, 0, Math.PI * 2); c.fill();
+      c.fillStyle = "#ffffff"; c.beginPath(); c.arc(86.6, 5.4, 0.6, 0, Math.PI * 2); c.fill();
+    },
+    pizza: function (c) {
+      c.fillStyle = "#c9a36b"; rrect(c, 0, 4, 104, 34, 4); c.fill();
+      c.strokeStyle = "#a07a45"; c.lineWidth = 2; rrect(c, 1, 5, 102, 32, 3); c.stroke();
+      c.beginPath(); c.moveTo(1, 13); c.lineTo(103, 13); c.stroke();
+      c.fillStyle = "rgba(120,80,30,0.22)";
+      c.beginPath(); c.ellipse(58, 31, 6, 2.6, 0, 0, Math.PI * 2); c.fill();
+      c.beginPath(); c.ellipse(20, 17, 3, 1.8, 0, 0, Math.PI * 2); c.fill();
+      c.fillStyle = "#b91c1c"; c.font = "800 15px 'Bricolage Grotesque', sans-serif";
+      c.textAlign = "center"; c.textBaseline = "middle";
+      c.fillText("PIZZA", 38, 27);
+      c.fillStyle = "#fbbf24"; c.beginPath(); c.moveTo(76, 18); c.lineTo(100, 18); c.lineTo(88, 36); c.closePath(); c.fill();
+      c.fillStyle = "#d97706"; rrect(c, 75, 16, 26, 4, 2); c.fill();
+      c.fillStyle = "#dc2626";
+      [[85, 24, 2.5], [92, 24, 2.1], [88.5, 30, 2.1]].forEach(function (d) { c.beginPath(); c.arc(d[0], d[1], d[2], 0, Math.PI * 2); c.fill(); });
+    },
+    sock: function (c) {
+      var pth = new Path2D();
+      pth.moveTo(2, 6); pth.lineTo(46, 6); pth.lineTo(50, 16); pth.lineTo(88, 16);
+      pth.quadraticCurveTo(104, 16, 104, 27); pth.quadraticCurveTo(104, 38, 88, 38);
+      pth.lineTo(38, 38); pth.quadraticCurveTo(26, 38, 26, 28); pth.lineTo(2, 28); pth.closePath();
+      c.save();
+      c.fillStyle = "#7c3aed"; c.fill(pth);
+      c.clip(pth);
+      c.fillStyle = "#f9a8d4";
+      c.fillRect(0, 4, 12, 26);
+      for (var x = 22; x < 94; x += 16) c.fillRect(x, 0, 6, 40);
+      c.fillStyle = "#fde047"; c.beginPath(); c.arc(32, 36, 8, 0, Math.PI * 2); c.fill();
+      c.fillRect(94, 10, 14, 32);
+      c.restore();
+      c.strokeStyle = "#4c1d95"; c.lineWidth = 1.5; c.stroke(pth);
+    },
+    disco: function (c, t) {
+      var hue = Math.floor((t * 90) % 360), i;
+      c.fillStyle = "hsl(" + hue + ",70%,45%)"; rrect(c, 0, 4, 104, 34, 8); c.fill();
+      c.save(); rrect(c, 0, 4, 104, 34, 8); c.clip();
+      c.strokeStyle = "rgba(255,255,255,0.35)"; c.lineWidth = 1;
+      for (i = 0; i <= 104; i += 8) { c.beginPath(); c.moveTo(i, 4); c.lineTo(i, 38); c.stroke(); }
+      for (i = 4; i <= 38; i += 8) { c.beginPath(); c.moveTo(0, i); c.lineTo(104, i); c.stroke(); }
+      for (i = 0; i < 7; i++) {
+        var a = 0.5 + 0.5 * Math.sin(t * 6 + i * 1.7);
+        c.fillStyle = "rgba(255,255,255," + (0.12 + 0.7 * a).toFixed(2) + ")";
+        c.fillRect(((i * 5) % 13) * 8 + 1, 5 + ((i * 3) % 4) * 8 + 1, 6, 6);
+      }
+      c.restore();
+      c.fillStyle = "#e5e7eb"; c.fillRect(50, -4, 4, 9);
+    }
+  };
+
+  // Score skins unlock from your best score on this device. Silly skins cost 0.1 XNO each.
+  var SKINS = [
+    { id: "classic", name: "Classic", at: 0, body: null, clasp: null },
+    { id: "ocean", name: "Ocean", at: 200, body: "#0b5d8a", clasp: "#7dd3fc" },
+    { id: "sunset", name: "Sunset", at: 600, body: "#b5400f", clasp: "#fcd34d" },
+    { id: "mint", name: "Mint", at: 1500, body: "#0f766e", clasp: "#a7f3d0" },
+    { id: "royal", name: "Royal", at: 3000, body: "#5b21b6", clasp: "#fbbf24" },
+    { id: "gold", name: "Gold", at: 6000, body: "#c58a0a", clasp: "#7c2d12" },
+    { id: "duck", name: "Rubber Duck", paid: true, at: 0, art: ART.duck, blurb: "Quack. Floats, probably." },
+    { id: "pizza", name: "Pizza Box", paid: true, at: 0, art: ART.pizza, blurb: "Extra cheese. Contains no pizza." },
+    { id: "sock", name: "Odd Sock", paid: true, at: 0, art: ART.sock, blurb: "Lost one in the wash, found a wallet." },
+    { id: "disco", name: "Disco", paid: true, at: 0, art: ART.disco, blurb: "Never stops changing colour." }
+  ];
+  function skinById(id) { for (var i = 0; i < SKINS.length; i++) if (SKINS[i].id === id) return SKINS[i]; return SKINS[0]; }
+  var paidOwned = (function () {
+    try { var a = JSON.parse(lsGet("fc-paid", "[]")); return Array.isArray(a) ? a : []; } catch (e) { return []; }
+  })();
+  function owned(sk) { return sk.paid ? paidOwned.indexOf(sk.id) >= 0 : best >= sk.at; }
+  var skinId = lsGet("fc-skin", "classic");
+  if (!owned(skinById(skinId))) skinId = "classic";
+  var buying = null, qr3 = null;
+
+  function closeBuy() { buying = null; $("buy").hidden = true; }
+  function openBuy(sk) {
+    buying = sk;
+    $("buy-title").textContent = sk.name + " · 0.1 XNO";
+    $("buy-text").textContent = sk.blurb + " Send 0.1 XNO, then tap the button to unlock it.";
+    $("status3").textContent = "";
+    $("buy").hidden = false;
+    try {
+      if (!qr3) { qr3 = new QRCode($("qr3"), { text: uriFor("0.1"), width: 120, height: 120, colorDark: "#000000", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.M }); }
+    } catch (e) { $("qr3").style.display = "none"; }
+    try { $("buy").scrollIntoView({ behavior: "smooth", block: "nearest" }); } catch (e) {}
+  }
+  function renderSkins() {
+    var box = $("skins"); box.textContent = "";
+    var next = null;
+    SKINS.forEach(function (sk) {
+      var ok = owned(sk);
+      if (!sk.paid && !ok && !next) next = sk;
+      var btn = document.createElement("button");
+      btn.type = "button"; btn.className = "skin";
+      btn.disabled = !ok && !sk.paid;
+      btn.setAttribute("aria-pressed", sk.id === skinId ? "true" : "false");
+      var sw;
+      if (sk.art) {
+        sw = document.createElement("canvas"); sw.className = "pv"; sw.width = 208; sw.height = 112;
+        sw.setAttribute("aria-hidden", "true");
+        var pc = sw.getContext("2d"); pc.scale(2, 2); pc.translate(0, 16); sk.art(pc, 0.5);
+      } else {
+        sw = document.createElement("span"); sw.className = "sw";
+        sw.style.background = sk.body || "var(--ink)";
+        sw.style.setProperty("--clasp", sk.clasp || "var(--accent)");
+      }
+      var nm = document.createElement("span"); nm.className = "nm"; nm.textContent = sk.name;
+      var sub = document.createElement("span"); sub.className = "sub";
+      sub.textContent = ok ? (sk.id === skinId ? "In use" : "Unlocked") : (sk.paid ? "0.1 XNO" : "Score " + sk.at);
+      btn.appendChild(sw); btn.appendChild(nm); btn.appendChild(sub);
+      btn.addEventListener("click", function () {
+        if (owned(sk)) { skinId = sk.id; lsSet("fc-skin", skinId); closeBuy(); renderSkins(); }
+        else if (sk.paid) { openBuy(sk); }
+      });
+      box.appendChild(btn);
+    });
+    $("skin-note").textContent = (next
+      ? "Best score on this device: " + best + ". Next score skin unlocks at " + next.at + " points."
+      : "All score skins unlocked.") + " Silly skins cost 0.1 XNO each and stay unlocked on this device.";
+  }
+  renderSkins();
+  $("copy3").addEventListener("click", function () { copyAddress($("status3")); });
+  $("buy-cancel").addEventListener("click", closeBuy);
+  $("buy-ok").addEventListener("click", function () {
+    if (!buying) return;
+    var got = buying;
+    if (paidOwned.indexOf(got.id) < 0) { paidOwned.push(got.id); lsSet("fc-paid", JSON.stringify(paidOwned)); }
+    skinId = got.id; lsSet("fc-skin", skinId);
+    closeBuy(); renderSkins();
+    $("skin-note").textContent = got.name + " unlocked. Thank you!";
+    sfx.extra();
+  });
+
+  // ---- Key to everything that falls ---------------------------------------
+  (function buildKey() {
+    var box = $("key");
+    function item(tagText, bg, round, text, fg) {
+      var d = document.createElement("div"); d.className = "it";
+      var t = document.createElement("span"); t.className = "tag" + (round ? " round" : "");
+      t.style.background = bg; if (fg) t.style.color = fg; t.textContent = tagText;
+      var s = document.createElement("span"); s.textContent = text;
+      d.appendChild(t); d.appendChild(s); box.appendChild(d);
+    }
+    item("Ӿ", "var(--accent)", true, "Coin: 1 point", "var(--accent-ink)");
+    item("Ӿ", GOLD, true, "Gold coin: 5 points", "#5c3a00");
+    item("♥", "var(--bad)", true, "Heart: gives back a life");
+    item("FEE", "var(--bad)", false, "Fee: costs a life");
+    var desc = {
+      magnet: "Pulls coins and hearts towards you",
+      shield: "Blocks one fee",
+      slow: "Slows everything down",
+      grow: "Wider wallet, but catches fees too",
+      mini: "Narrow wallet, double points",
+      feeless: "Broccoli: every fee turns into a coin"
+    };
+    PU_KINDS.forEach(function (k) {
+      var label = desc[k] + " (" + (Math.round(PU[k].dur * 10) / 10) + "s)";
+      if (k === "feeless") {
+        var d = document.createElement("div"); d.className = "it";
+        var cvs = document.createElement("canvas");
+        cvs.width = 88; cvs.height = 80; cvs.style.width = "44px"; cvs.style.height = "40px"; cvs.style.flex = "none";
+        cvs.setAttribute("aria-hidden", "true");
+        var kc = cvs.getContext("2d"); kc.scale(2, 2);
+        drawBroccoli(kc, 22, 22);
+        var s = document.createElement("span"); s.textContent = label + ". Rare, from level 3.";
+        d.appendChild(cvs); d.appendChild(s); box.appendChild(d);
+      } else {
+        item(PU[k].tag, PU[k].color, false, label);
+      }
+    });
+  })();
+
+  $("rule-skins").textContent = SKINS.filter(function (s) { return !s.paid && s.at > 0; })
+    .map(function (s) { return s.name + " " + s.at; }).join(", ");
+
+  var PW = 104, PH = 38, PY = H - 58;
+  var st = {
+    run: false, score: 0, lives: 3, px: W / 2, pw: PW, items: [], spawn: 0, last: 0, frame: 0, keys: {}, t: 0,
+    caught: 0, streak: 0, level: 1, texts: [], banner: null, shake: 0, bump: 0,
+    intro: 0, introLines: null, continued: false, lastScore: 0, lastLevel: 1, paused: false, frenzy: 0,
+    fx: { magnet: 0, shield: 0, slow: 0, grow: 0, mini: 0, feeless: 0 }
+  };
+
+  function livesText() { return "♥".repeat(Math.max(0, st.lives)) + "·".repeat(Math.max(0, 3 - st.lives)); }
+  function mult() { return Math.min(5, 1 + Math.floor(st.streak / 6)); }
+  function levelOf() { return 1 + Math.floor(st.caught / 9); }
+  function updateHud() {
+    $("score").textContent = st.score;
+    $("lives").textContent = livesText();
+    $("lvl").textContent = "Level " + st.level;
+    $("mult").textContent = "Streak " + st.streak + " · x" + mult();
+  }
+  function showNormal() { $("paystep").hidden = true; $("pausebox").hidden = true; $("normal").hidden = false; }
+  function showPayStep() { $("normal").hidden = true; $("pausebox").hidden = true; $("paystep").hidden = false; $("status2").textContent = ""; }
+  function floatText(x, y, txt, color) { st.texts.push({ x: x, y: y, txt: txt, color: color, t: 0.9 }); }
+  function scrollToBoard() { try { $("board").scrollIntoView({ behavior: "smooth", block: "center" }); } catch (e) {} }
+  function resetFx() { for (var k in st.fx) st.fx[k] = 0; st.frenzy = 0; st.paused = false; }
+
+  function start() {
+    audio();
+    st.run = true; st.score = 0; st.lives = 3; st.items = []; st.spawn = 0.4; st.px = W / 2; st.last = performance.now();
+    st.caught = 0; st.streak = 0; st.level = 1; st.texts = []; st.banner = null; st.shake = 0; st.bump = 0;
+    st.continued = false; st.pw = PW; resetFx();
+    st.intro = 1.7; st.introLines = [["CATCH COINS", "accent"], ["AVOID FEES", "bad"]];
+    updateHud();
+    $("overlay").hidden = true;
+    $("cont").hidden = true; $("finish").hidden = true; $("share").hidden = true; $("to-donate").hidden = true;
+    readColors();
+    scrollToBoard();
+    sfx.start();
+    setPauseUi();
+    requestAnimationFrame(loop);
+  }
+  function resume() {
+    audio();
+    st.run = true; st.lives = 1; st.items = []; st.spawn = 0.6; st.streak = 0; st.continued = true;
+    st.last = performance.now(); resetFx();
+    st.intro = 1.1; st.introLines = [["EXTRA LIFE", "accent"], ["GO!", "bad"]];
+    updateHud();
+    $("overlay").hidden = true;
+    scrollToBoard();
+    sfx.extra();
+    setPauseUi();
+    requestAnimationFrame(loop);
+  }
+  function end() {
+    st.run = false;
+    var finalScore = st.score;
+    st.lastScore = finalScore; st.lastLevel = st.level;
+    var isBest = finalScore > best, oldBest = best;
+    if (isBest) { best = finalScore; $("best").textContent = best; lsSet("fc-best", best); }
+    if (st.level > bestLevel) { bestLevel = st.level; lsSet("fc-bestlevel", bestLevel); }
+    renderBest();
+    var newSkins = SKINS.filter(function (s) { return s.at > oldBest && s.at <= best; });
+    var unlockNote = newSkins.length ? "New wallet skin unlocked: " + newSkins.map(function (s) { return s.name; }).join(", ") + "." : "";
+    if (isBest) renderSkins();
+    sfx.over();
+    setPauseUi();
+    $("ov-title").textContent = "Game over. Score " + finalScore;
+    $("ov-text").textContent = (isBest && finalScore > 0 ? "New best score on this device. " : "Best score: " + best + ". ") + "You reached level " + st.level + ".";
+    $("ov-board").textContent = unlockNote;
+    $("play").textContent = "Play again";
+    $("cont").hidden = st.continued;
+    $("finish").hidden = false; $("share").hidden = false;
+    $("to-donate").hidden = true;
+    showNormal();
+    $("overlay").hidden = false;
+  }
+
+  function spawnOne() {
+    var L = st.level;
+    var noBadge = !st.items.some(function (i) { return i.type === "pu"; });
+    if (L >= 3 && noBadge && Math.random() < 0.02) {
+      st.items.push({ x: 30 + Math.random() * (W - 60), y: -26, vy: 140 + Math.min(L, 10) * 8, vx: 0, type: "pu", kind: "feeless" });
+      return;
+    }
+    if (L >= 2 && noBadge && Math.random() < 0.05) {
+      st.items.push({ x: 30 + Math.random() * (W - 60), y: -26, vy: 130 + Math.min(L, 10) * 8, vx: 0, type: "pu", kind: pickKind() });
+      return;
+    }
+    var feeP = Math.min(0.45, 0.28 + (L - 1) * 0.02);
+    var r = Math.random(), type;
+    if (r < feeP) type = "fee";
+    else if (r < feeP + 0.07) type = "gold";
+    else if (st.lives < 3 && r < feeP + 0.11) type = "heart";
+    else type = "coin";
+    if (type === "fee" && st.fx.feeless > 0) type = "coin";
+    var base = Math.min(560, 130 + (L - 1) * 26);
+    var vy = base + Math.random() * 50;
+    if (type === "gold") vy *= 1.15;
+    if (type === "heart") vy *= 0.85;
+    var vx = 0;
+    if (type === "fee" && L >= 3 && Math.random() < 0.6) {
+      vx = (Math.random() < 0.5 ? -1 : 1) * Math.min(110, 30 + L * 6);
+    }
+    st.items.push({ x: 24 + Math.random() * (W - 48), y: -26, vy: vy, vx: vx, type: type });
+  }
+  function spawn() {
+    var L = st.level;
+    spawnOne();
+    if (L >= 3 && Math.random() < 0.18) spawnOne();
+    st.spawn = Math.max(0.2, 0.8 - (L - 1) * 0.06);
+  }
+  var SIZE = { coin: [14, 14], gold: [17, 17], heart: [14, 14], fee: [20, 16], pu: [22, 13] };
+
+  function activate(kind) {
+    st.fx[kind] = PU[kind].dur;
+    if (kind === "grow") st.fx.mini = 0;
+    if (kind === "mini") st.fx.grow = 0;
+    if (kind === "feeless") st.items.forEach(function (it) { if (it.type === "fee") { it.type = "coin"; it.vx = 0; } });
+    st.bump = 1;
+    floatText(st.px, PY - 8, PU[kind].name, PU[kind].color);
+    sfx.power();
+  }
+
+  function loop(now) {
+    if (!st.run || st.paused) return;
+    var dt = Math.min(0.04, (now - st.last) / 1000); st.last = now; st.frame++;
+    st.t += dt;
+    if (st.frame % 90 === 0) readColors();
+    var fx = st.fx;
+    // wallet width eases toward its target size
+    var target = PW * (fx.grow > 0 ? 1.3 : 1) * (fx.mini > 0 ? 0.65 : 1);
+    st.pw += (target - st.pw) * Math.min(1, 8 * dt);
+    var k = st.keys;
+    if (k.ArrowLeft || k.a) st.px -= 400 * dt;
+    if (k.ArrowRight || k.d) st.px += 400 * dt;
+    st.px = Math.max(st.pw / 2, Math.min(W - st.pw / 2, st.px));
+    if (st.intro > 0) {
+      st.intro -= dt;
+      draw();
+      requestAnimationFrame(loop);
+      return;
+    }
+    for (var key in fx) { if (fx[key] > 0) fx[key] = Math.max(0, fx[key] - dt); }
+    if (st.frenzy > 0) st.frenzy = Math.max(0, st.frenzy - dt);
+    var sdt = dt * (fx.slow > 0 ? 0.5 : 1);
+    st.spawn -= sdt; if (st.spawn <= 0) spawn();
+    st.bump = Math.max(0, st.bump - dt * 5);
+    st.shake = Math.max(0, st.shake - dt);
+    if (st.banner) { st.banner.t -= dt; if (st.banner.t <= 0) st.banner = null; }
+    for (var j = st.texts.length - 1; j >= 0; j--) {
+      var tx = st.texts[j]; tx.t -= dt; tx.y -= 42 * dt;
+      if (tx.t <= 0) st.texts.splice(j, 1);
+    }
+
+    for (var i = st.items.length - 1; i >= 0; i--) {
+      var it = st.items[i];
+      it.y += it.vy * sdt;
+      if (fx.magnet > 0 && (it.type === "coin" || it.type === "gold" || it.type === "heart") && it.y > 40) {
+        it.x += (st.px - it.x) * Math.min(1, 4 * dt);
+      }
+      if (it.vx) {
+        it.x += it.vx * sdt;
+        if (it.x < 20) { it.x = 20; it.vx = Math.abs(it.vx); }
+        if (it.x > W - 20) { it.x = W - 20; it.vx = -Math.abs(it.vx); }
+      }
+      var hw = SIZE[it.type][0], hh = SIZE[it.type][1];
+      var hit = it.y + hh >= PY && it.y - hh <= PY + PH && Math.abs(it.x - st.px) <= st.pw / 2 + hw * 0.5;
+      if (hit) {
+        st.items.splice(i, 1);
+        if (it.type === "fee") {
+          if (fx.shield > 0) {
+            fx.shield = 0; st.shake = 0.12;
+            floatText(it.x, PY - 6, "BLOCKED", PU.shield.color);
+            sfx.shield();
+          } else {
+            st.lives--; st.streak = 0; st.shake = 0.3;
+            floatText(it.x, PY - 6, "FEE", C["--bad"]);
+            sfx.fee();
+            updateHud();
+            if (st.lives <= 0) { draw(); end(); return; }
+          }
+        } else if (it.type === "heart") {
+          if (st.lives < 3) st.lives++;
+          st.bump = 1; floatText(it.x, PY - 6, "+♥", C["--bad"]);
+          sfx.heart();
+          updateHud();
+        } else if (it.type === "pu") {
+          activate(it.kind);
+        } else {
+          var val = it.type === "gold" ? 5 : 1;
+          st.streak++; st.caught++;
+          var pts = val * mult() * (fx.mini > 0 ? 2 : 1) * (st.frenzy > 0 ? 2 : 1);
+          st.score += pts; st.bump = 1;
+          floatText(it.x, PY - 6, "+" + pts, it.type === "gold" ? GOLD : C["--accent"]);
+          if (it.type === "gold") sfx.gold(); else sfx.coin(st.streak);
+          if (st.streak % 20 === 0) {
+            st.frenzy = 5;
+            st.banner = { text: "FRENZY!", sub: "double points for 5 seconds", t: 1.6 };
+            sfx.frenzy();
+          }
+          var nl = levelOf();
+          if (nl > st.level) {
+            var newStage = stageOf(nl) !== stageOf(st.level);
+            st.level = nl;
+            st.banner = { text: "LEVEL " + nl, sub: newStage ? STAGES[stageOf(nl)].name : "faster now", t: 1.6 };
+            sfx.level();
+          }
+          updateHud();
+        }
+      } else if (it.y > H + 30) {
+        st.items.splice(i, 1);
+        // Letting a coin go no longer resets the streak; only catching a fee does.
+      }
+    }
+    draw();
+    requestAnimationFrame(loop);
+  }
+
+  function rr(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y); ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r); ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+  }
+  function drawScenery() {
+    var stage = stageOf(st.level), S = STAGES[stage], i;
+    ctx.fillStyle = C["--field"]; ctx.fillRect(-10, -10, W + 20, H + 20);
+    if (S.tint) { ctx.globalAlpha = S.a; ctx.fillStyle = S.tint; ctx.fillRect(-10, -10, W + 20, H + 20); ctx.globalAlpha = 1; }
+    ctx.strokeStyle = C["--line"]; ctx.lineWidth = 1;
+    for (var y = 40; y < H; y += 40) { ctx.beginPath(); ctx.moveTo(0, y + 0.5); ctx.lineTo(W, y + 0.5); ctx.stroke(); }
+    if (stage === 1) {
+      ctx.globalAlpha = 0.1; ctx.fillStyle = C["--ink"];
+      decor.b.forEach(function (b) { ctx.fillRect(b.x, H - b.h, b.w, b.h); });
+      ctx.globalAlpha = 1;
+    } else if (stage === 2) {
+      ctx.globalAlpha = 0.2; ctx.strokeStyle = C["--ink"]; ctx.lineWidth = 1;
+      decor.r.forEach(function (r) {
+        var yy = ((r.y + st.t * r.v) % (H + 40)) - 20;
+        ctx.beginPath(); ctx.moveTo(r.x, yy); ctx.lineTo(r.x - 3, yy + r.l); ctx.stroke();
+      });
+      ctx.globalAlpha = 1;
+    } else if (stage === 3) {
+      ctx.fillStyle = C["--ink"];
+      decor.s.forEach(function (s) {
+        ctx.globalAlpha = 0.25 + 0.2 * (1 + Math.sin(st.t * 2 + s.p));
+        ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2); ctx.fill();
+      });
+      ctx.globalAlpha = 1;
+    } else if (stage === 4) {
+      var pts = decor.n.map(function (n) { return { x: n.x + Math.sin(st.t * 0.5 + n.p) * n.ax, y: n.y + Math.cos(st.t * 0.4 + n.p) * n.ay }; });
+      ctx.strokeStyle = C["--accent"]; ctx.lineWidth = 1; ctx.globalAlpha = 0.18;
+      for (i = 0; i < pts.length; i++) for (var j = i + 1; j < pts.length; j++) {
+        var dx = pts[i].x - pts[j].x, dy = pts[i].y - pts[j].y;
+        if (dx * dx + dy * dy < 100 * 100) { ctx.beginPath(); ctx.moveTo(pts[i].x, pts[i].y); ctx.lineTo(pts[j].x, pts[j].y); ctx.stroke(); }
+      }
+      ctx.globalAlpha = 0.4; ctx.fillStyle = C["--accent"];
+      pts.forEach(function (p) { ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI * 2); ctx.fill(); });
+      ctx.globalAlpha = 1;
+    }
+  }
+  function drawWallet() {
+    ctx.save();
+    ctx.translate(st.px, PY + PH / 2);
+    var s = st.bump * 0.08, sx = st.pw / PW;
+    ctx.scale((1 + s) * sx, 1 - s);
+    ctx.translate(-PW / 2, -PH / 2);
+    var sk = skinById(skinId);
+    if (sk.art) {
+      sk.art(ctx, st.t);
+    } else {
+      var bodyC = sk.body || C["--ink"], claspC = sk.clasp || C["--accent"];
+      ctx.fillStyle = bodyC; rr(0, 6, PW, PH - 6, 8); ctx.fill();
+      ctx.fillStyle = bodyC; rr(0, 0, PW, 14, 7); ctx.fill();
+      ctx.fillStyle = C["--field"]; rr(9, 3.5, PW - 18, 6, 3); ctx.fill();
+      ctx.strokeStyle = C["--field"]; ctx.lineWidth = 1.5; ctx.setLineDash([4, 3]);
+      ctx.beginPath(); ctx.moveTo(8, PH - 9); ctx.lineTo(PW - 36, PH - 9); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = claspC; rr(PW - 30, 16, 32, 16, 5); ctx.fill();
+      ctx.fillStyle = bodyC; ctx.beginPath(); ctx.arc(PW - 18, 24, 3.2, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
+    if (st.fx.shield > 0) {
+      ctx.save();
+      ctx.globalAlpha = st.fx.shield < 3 ? 0.4 + 0.4 * Math.sin(st.t * 14) : 0.9;
+      ctx.strokeStyle = PU.shield.color; ctx.lineWidth = 3; ctx.fillStyle = PU.shield.color;
+      ctx.beginPath(); ctx.ellipse(st.px, PY + PH / 2 + 2, st.pw / 2 + 8, PH / 2 + 16, 0, Math.PI, Math.PI * 2);
+      ctx.stroke(); ctx.globalAlpha *= 0.15; ctx.fill();
+      ctx.restore();
+    }
+  }
+  function drawBroccoli(c, x, y) {
+    c.save(); c.translate(x, y);
+    c.fillStyle = "#86b34a"; c.fillRect(-4.5, 2, 9, 15);
+    c.fillStyle = "#1f7a3a";
+    [[-11, -2, 9], [0, -8, 10], [11, -2, 9], [-5, 4, 8], [6, 4, 8]].forEach(function (b) {
+      c.beginPath(); c.arc(b[0], b[1], b[2], 0, Math.PI * 2); c.fill();
+    });
+    c.fillStyle = "#3aa655";
+    [[-11, -5, 3], [0, -12, 3], [10, -5, 3], [-4, 0, 2.5], [6, 1, 2.5]].forEach(function (b) {
+      c.beginPath(); c.arc(b[0], b[1], b[2], 0, Math.PI * 2); c.fill();
+    });
+    c.restore();
+  }
+  function drawItem(it) {
+    var x = it.x, y = it.y;
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    if (it.type === "fee") {
+      ctx.fillStyle = C["--bad"]; ctx.fillRect(x - 20, y - 16, 40, 32);
+      ctx.fillStyle = "#fff"; ctx.font = "800 13px 'IBM Plex Mono', monospace";
+      ctx.fillText("FEE", x, y + 1);
+    } else if (it.type === "gold") {
+      ctx.fillStyle = GOLD; ctx.beginPath(); ctx.arc(x, y, 17, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = GOLD_DARK; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(x, y, 13, 0, Math.PI * 2); ctx.stroke();
+      ctx.fillStyle = "#5c3a00"; ctx.font = "800 17px 'Bricolage Grotesque', sans-serif";
+      ctx.fillText("Ӿ", x, y + 1);
+    } else if (it.type === "heart") {
+      ctx.fillStyle = C["--bad"]; ctx.font = "800 28px 'Bricolage Grotesque', sans-serif";
+      ctx.fillText("♥", x, y + 1);
+    } else if (it.type === "pu") {
+      if (it.kind === "feeless") { drawBroccoli(ctx, x, y); return; }
+      var p = PU[it.kind];
+      ctx.fillStyle = p.color; rr(x - 22, y - 13, 44, 26, 6); ctx.fill();
+      ctx.strokeStyle = "#fff"; ctx.lineWidth = 2; ctx.stroke();
+      ctx.fillStyle = "#fff"; ctx.font = "800 11px 'IBM Plex Mono', monospace";
+      ctx.fillText(p.tag, x, y + 1);
+    } else {
+      ctx.fillStyle = C["--accent"]; ctx.beginPath(); ctx.arc(x, y, 14, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = C["--accent-ink"]; ctx.font = "800 17px 'Bricolage Grotesque', sans-serif";
+      ctx.fillText("Ӿ", x, y + 1);
+    }
+  }
+  function draw() {
+    ctx.save();
+    if (st.shake > 0) ctx.translate((Math.random() - 0.5) * 8, (Math.random() - 0.5) * 8);
+    ctx.clearRect(0, 0, W, H);
+    drawScenery();
+    st.items.forEach(drawItem);
+    drawWallet();
+    st.texts.forEach(function (t) {
+      ctx.globalAlpha = Math.max(0, Math.min(1, t.t / 0.5));
+      ctx.fillStyle = t.color; ctx.font = "800 16px 'IBM Plex Mono', monospace";
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillText(t.txt, t.x, t.y);
+    });
+    ctx.globalAlpha = 1;
+    // active power-ups
+    var row = 0;
+    ctx.textAlign = "left"; ctx.textBaseline = "middle"; ctx.font = "800 11px 'IBM Plex Mono', monospace";
+    PU_KINDS.forEach(function (kd) {
+      var left = st.fx[kd];
+      if (left > 0) {
+        ctx.fillStyle = PU[kd].color; ctx.fillRect(8, 12 + row * 16 - 5, 8, 10);
+        ctx.fillStyle = C["--ink"];
+        ctx.fillText(PU[kd].name + " " + Math.ceil(left) + "s", 22, 12 + row * 16);
+        row++;
+      }
+    });
+    if (st.frenzy > 0) {
+      ctx.fillStyle = GOLD; ctx.fillRect(8, 12 + row * 16 - 5, 8, 10);
+      ctx.fillStyle = C["--ink"];
+      ctx.textAlign = "left"; ctx.textBaseline = "middle"; ctx.font = "800 11px 'IBM Plex Mono', monospace";
+      ctx.fillText("FRENZY x2 " + Math.ceil(st.frenzy) + "s", 22, 12 + row * 16);
+      row++;
+      ctx.save();
+      ctx.globalAlpha = 0.5 + 0.3 * Math.sin(st.t * 12);
+      ctx.strokeStyle = GOLD; ctx.lineWidth = 5; ctx.strokeRect(2.5, 2.5, W - 5, H - 5);
+      ctx.restore();
+    }
+    if (st.banner) {
+      ctx.globalAlpha = Math.min(1, st.banner.t / 0.4);
+      ctx.fillStyle = C["--accent"]; ctx.font = "800 34px 'Bricolage Grotesque', sans-serif";
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillText(st.banner.text, W / 2, 110);
+      ctx.font = "500 13px 'IBM Plex Mono', monospace"; ctx.fillStyle = C["--ink"];
+      ctx.fillText(st.banner.sub, W / 2, 138);
+      ctx.globalAlpha = 1;
+    }
+    if (st.run && st.intro > 0 && st.introLines) {
+      ctx.globalAlpha = Math.min(1, st.intro / 0.3);
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.font = "800 36px 'Bricolage Grotesque', sans-serif";
+      ctx.fillStyle = C[st.introLines[0][1] === "bad" ? "--bad" : "--accent"];
+      ctx.fillText(st.introLines[0][0], W / 2, H / 2 - 40);
+      ctx.fillStyle = C[st.introLines[1][1] === "bad" ? "--bad" : "--accent"];
+      ctx.fillText(st.introLines[1][0], W / 2, H / 2 + 4);
+      ctx.globalAlpha = 1;
+    }
+    ctx.restore();
+  }
+  draw();
+
+  function setPauseUi() {
+    $("pause").disabled = !st.run;
+    $("pause").textContent = st.paused ? "Resume" : "Pause";
+    $("fpause").disabled = !st.run || st.paused;
+  }
+  function pauseGame() {
+    if (!st.run || st.paused) return;
+    st.paused = true; st.keys = {};
+    $("normal").hidden = true; $("paystep").hidden = true; $("pausebox").hidden = false;
+    $("overlay").hidden = false;
+    setPauseUi();
+  }
+  function unpauseGame() {
+    if (!st.paused) return;
+    st.paused = false;
+    $("pausebox").hidden = true;
+    $("overlay").hidden = true;
+    st.last = performance.now();
+    st.intro = 1.0; st.introLines = [["GET READY", "accent"], ["GO!", "bad"]];
+    setPauseUi();
+    requestAnimationFrame(loop);
+  }
+  function togglePause() { if (st.paused) unpauseGame(); else pauseGame(); }
+  $("pause").addEventListener("click", togglePause);
+  $("fpause").addEventListener("click", pauseGame);
+  $("resume-btn").addEventListener("click", unpauseGame);
+  document.addEventListener("visibilitychange", function () { if (document.hidden) pauseGame(); });
+  setPauseUi();
+
+  $("play").addEventListener("click", start);
+  $("finish").addEventListener("click", function () {
+    $("ov-title").textContent = "Thanks for playing!";
+    $("ov-text").textContent = "Final score " + st.lastScore + ". Best " + best + ". Donations keep this going and are always optional.";
+    $("ov-board").textContent = "";
+    $("cont").hidden = true; $("finish").hidden = true; $("to-donate").hidden = false;
+  });
+  $("share").addEventListener("click", function () {
+    var msg = "I scored " + st.lastScore + " on Feeless Catch (level " + st.lastLevel + "). Can you beat it? " + GAME_URL;
+    copyText(msg,
+      function () { $("ov-board").textContent = "Copied. Paste it into a message to challenge a friend."; },
+      function () { $("ov-board").textContent = msg; });
+  });
+  $("cont").addEventListener("click", function () {
+    try {
+      if (!qr2) { qr2 = new QRCode($("qr2"), { text: uriFor("0.05"), width: 120, height: 120, colorDark: "#000000", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.M }); }
+    } catch (e) { $("qr2").style.display = "none"; }
+    showPayStep();
+  });
+  $("back").addEventListener("click", showNormal);
+  $("paid").addEventListener("click", resume);
+  window.addEventListener("keydown", function (e) {
+    if (e.target && e.target.tagName === "INPUT") return;
+    var key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+    if (key === "p" || key === "Escape") { togglePause(); return; }
+    if (key === "ArrowLeft" || key === "ArrowRight") { st.keys[key] = true; if (st.run) e.preventDefault(); }
+    if (key === "a" || key === "d") st.keys[key] = true;
+  });
+  window.addEventListener("keyup", function (e) {
+    var key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+    st.keys[key] = false;
+  });
+  function pointer(e) {
+    if (!st.run) return;
+    var r = cv.getBoundingClientRect();
+    st.px = Math.max(st.pw / 2, Math.min(W - st.pw / 2, (e.clientX - r.left) / r.width * W));
+  }
+  cv.addEventListener("pointerdown", function (e) { audio(); pointer(e); });
+  cv.addEventListener("pointermove", pointer);
+})();
+</script>
+</body></html>
