@@ -110,6 +110,13 @@ ol.scores li .rk { color: var(--muted); }
 .buy[hidden] { display: none; }
 .buy h3 { margin: 0; font-family: var(--font-display); font-size: 1.1rem; }
 .buy .qr3 { background: #fff; padding: 6px; border-radius: 4px; line-height: 0; align-self: flex-start; }
+#diff button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 800; }
+#diff button { padding: 7px 14px; }
+.badges { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; }
+.badge { border: 1px solid var(--line); border-radius: 6px; padding: 8px; font-size: 0.78rem; background: var(--field); color: var(--muted); display: flex; flex-direction: column; gap: 2px; }
+.badge b { font-family: var(--font-display); font-size: 0.9rem; color: var(--ink); }
+.badge.off { opacity: 0.55; }
+.badge.on { border-color: var(--accent); }
 .skin .pv { display: block; width: 100%; height: auto; aspect-ratio: 104 / 56; }
 .skins { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; }
 .skin { display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; gap: 6px; padding: 8px; text-align: left; font-size: 0.8rem; min-width: 0; }
@@ -167,6 +174,12 @@ footer { color: var(--muted); font-size: 0.8rem; }
             <h2 id="ov-title">Catch the coins. Dodge the fees.</h2>
             <p id="ov-text">Drag, or use the arrow keys, to move your wallet. Gold coins are worth 5 and hearts give back a life. Power-ups start dropping from level 2. There's a key to everything that falls below the field.</p>
             <p class="note" id="ov-board" role="status"></p>
+            <div class="row" id="diff" role="group" aria-label="Difficulty">
+              <button type="button" data-d="easy" aria-pressed="false">Easy</button>
+              <button type="button" data-d="normal" aria-pressed="true">Normal</button>
+              <button type="button" data-d="hard" aria-pressed="false">Hard</button>
+            </div>
+            <div class="row"><button type="button" id="vibtn" aria-pressed="true">Vibration: on</button></div>
             <div class="row">
               <button class="primary" id="play">Play</button>
               <button id="cont" hidden>Extra life · 0.05 XNO</button>
@@ -193,29 +206,33 @@ footer { color: var(--muted); font-size: 0.8rem; }
           </div>
         </div>
       </div>
-      <p class="hint">Catch coins in a row to build a streak and multiply your points. Catching a fee resets the streak, but letting a coin go doesn't. The game speeds up and the scenery changes as you level up. Reach a 20-catch streak for a 5-second frenzy of double points. Press P or Esc to pause.</p>
+      <p class="hint">Catch coins in a row to build a streak and multiply your points. Catching a fee resets the streak, but letting a coin go doesn't. The game speeds up and the scenery changes as you level up. Every few levels a short coin rain gives you a breather. Reach a 20-catch streak for a 5-second frenzy of double points. Press P or Esc to pause.</p>
       <div class="key" id="key" aria-label="Key to everything that falls"></div>
       <details class="rules" id="rules">
         <summary>All the rules</summary>
         <div class="rules-body">
           <h3>Playing</h3>
           <p>Move your wallet by dragging on the field, or with the arrow keys (or A and D). Catch the good things and dodge the red fee blocks. Press P or Esc, or the pause button, to pause.</p>
+          <h3>Difficulty</h3>
+          <p>Pick Easy, Normal or Hard before you play. Easy is slower with fewer fees, Hard is faster with more, and Normal sits in between. Each difficulty keeps its own best score and highest level. Wallet skins unlock from your highest best across all three.</p>
           <h3>Lives</h3>
-          <p>You start with 3 lives. Catching a fee costs one life. Hearts give one back, up to 3. The run ends when you reach 0.</p>
+          <p>You start with 3 lives. Catching a fee costs one life, and a rare dark AUDIT block costs two. Hearts give one back, up to 3. The run ends when you reach 0.</p>
           <h3>Points, streak and multiplier</h3>
           <p>A coin is worth 1 point and a gold coin 5. Your streak counts the catches in a row since you last caught a fee. Letting a coin go does not break it. Every 6 catches in the streak adds 1 to your multiplier, up to x5.</p>
           <h3>Frenzy</h3>
           <p>Every 20 catches in a row starts a 5-second frenzy where all points double.</p>
           <h3>Levels</h3>
-          <p>You level up every 9 coins you catch. Each level makes things fall faster and more often, and brings more fee blocks. From level 3, some fee blocks drift sideways and items sometimes fall in pairs. The scenery changes at levels 3, 5, 7 and 9.</p>
+          <p>You level up every 9 coins you catch. Each level makes things fall faster and more often, and brings more fee blocks. From level 3, some fee blocks drift sideways and items sometimes fall in pairs. The scenery changes at levels 3, 5, 7 and 9. Every 4 levels you get a coin rain: a few seconds of coins only, with no fees. Coins caught in the rain add to your score and streak but do not count towards the next level.</p>
           <h3>Power-ups</h3>
           <p>From level 2, a power-up badge sometimes falls. Catch it to switch it on. Only one badge falls at a time, and the key above shows what each one does and how long it lasts. The shield lasts until it blocks one fee, or until its time runs out. Big and mini wallet cancel each other out, and the mini wallet is the rarest. Your streak multiplier, the mini wallet and a frenzy all multiply together. From level 3, a rare broccoli also falls. Catch it and every fee on screen turns into a coin for 5 seconds, and new fees turn into coins too. It never stacks with a badge already on screen, and it can't turn a fee you've already caught back into a life.</p>
           <h3>Extra life</h3>
           <p>When a run ends, you can send 0.05 XNO for one extra life. You carry on with 1 life and keep your score, but your streak and power-ups reset. It works once per run.</p>
           <h3>Wallet skins</h3>
-          <p>A skin unlocks when your best score on this device reaches its score: <span id="rule-skins"></span>. Four silly skins (Rubber Duck, Pizza Box, Odd Sock and Disco) cost 0.1 XNO each and stay unlocked on this device.</p>
+          <p>A skin unlocks when your best score on this device reaches its score: <span id="rule-skins"></span>. Four silly skins (Rubber Duck, Pizza Box, Odd Sock and Disco) cost 0.1 XNO each and stay unlocked on this device. You can try any of them for one game before you decide.</p>
+          <h3>Badges, sound and vibration</h3>
+          <p>Badges are earned for things like your first frenzy, reaching levels 5, 10 and 15, and a 50-catch streak. They are saved on this device. Quiet music plays while you play and speeds up as you level up; the Sound button turns both music and effects off. On phones that support it, the phone buzzes when you catch a fee or start a frenzy, and the Vibration button turns that off.</p>
           <h3>Best score</h3>
-          <p>Your best score and highest level are saved on this device and shown in the Your best score card.</p>
+          <p>Your best score and highest level for each difficulty are saved on this device and shown in the Your best score card. The Best figure above the game follows the difficulty you have picked.</p>
           <h3>Donations</h3>
           <p>Donating is optional. Every donation goes straight to the creator's Nano wallet, and Nano has no fees.</p>
         </div>
@@ -226,7 +243,7 @@ footer { color: var(--muted); font-size: 0.8rem; }
       <section class="card" aria-label="Best score">
         <h2>Your best score</h2>
         <div class="bestrow"><span class="bignum" id="best-big">0</span><span class="bestsub" id="best-sub"></span></div>
-        <p>Saved on this device. Beat it to unlock new wallet skins.</p>
+        <p id="best-all">Saved on this device. Beat it to unlock new wallet skins.</p>
       </section>
 
       <section class="card" aria-label="Wallet skins">
@@ -237,6 +254,7 @@ footer { color: var(--muted); font-size: 0.8rem; }
           <p id="buy-text"></p>
           <div class="qr3" id="qr3"></div>
           <div class="row" style="justify-content:flex-start">
+            <button id="try3">Try it for one game</button>
             <button id="copy3">Copy address</button>
             <button class="primary" id="buy-ok">I've sent it, unlock</button>
             <button id="buy-cancel">Not now</button>
@@ -244,6 +262,12 @@ footer { color: var(--muted); font-size: 0.8rem; }
           <p class="note" id="status3" role="status" style="color:var(--accent)"></p>
         </div>
         <p id="skin-note"></p>
+      </section>
+
+      <section class="card" aria-label="Badges">
+        <h2>Badges</h2>
+        <div class="badges" id="badges"></div>
+        <p id="badge-note"></p>
       </section>
 
       <aside class="card" id="donate" aria-label="Donate XNO">
@@ -332,7 +356,45 @@ footer { color: var(--muted); font-size: 0.8rem; }
   $("mute").addEventListener("click", function () {
     muted = !muted; lsSet("fc-mute", muted ? "1" : "0"); renderMute();
     if (!muted) { audio(); tone(660, 0.08, "triangle", 0.08); }
+    if (!muted && mus.on && !mus.timer) musicTick();
   });
+
+  var vibOn = lsGet("fc-vib", "1") === "1";
+  function vibOk() { return typeof navigator.vibrate === "function"; }
+  function vib(p) { if (!vibOn) return; try { if (vibOk()) navigator.vibrate(p); } catch (e) {} }
+  function renderVib() {
+    var b = $("vibtn");
+    if (!vibOk()) { b.textContent = "Vibration: not supported here"; b.disabled = true; b.setAttribute("aria-pressed", "false"); return; }
+    b.textContent = "Vibration: " + (vibOn ? "on" : "off");
+    b.setAttribute("aria-pressed", vibOn ? "true" : "false");
+  }
+  renderVib();
+  $("vibtn").addEventListener("click", function () {
+    vibOn = !vibOn; lsSet("fc-vib", vibOn ? "1" : "0"); renderVib();
+    if (vibOn) vib(200);
+  });
+  var mus = { on: false, step: 0, next: 0, timer: null };
+  var SCALE = [0, 3, 5, 7, 10];
+  var PAT = [0, 2, 4, 2, 0, 2, 4, 5, 0, 2, 4, 2, 3, 2, 1, 2];
+  function noteFreq(i) { return 196 * Math.pow(2, (SCALE[i % 5] + 12 * Math.floor(i / 5)) / 12); }
+  function musicTick() {
+    mus.timer = null;
+    if (!mus.on) return;
+    var a = audio();
+    if (a && !muted) {
+      if (mus.next < a.currentTime) mus.next = a.currentTime + 0.05;
+      var spb = 60 / (92 + Math.min(st.level, 15) * 5) / 2;
+      while (mus.next < a.currentTime + 0.3) {
+        var d = mus.next - a.currentTime, n = PAT[mus.step % 16];
+        tone(noteFreq(n + 5), 0.16, "triangle", 0.028, 0, d);
+        if (mus.step % 4 === 0) tone(noteFreq(n) / 2, 0.3, "sine", 0.045, 0, d);
+        mus.next += spb; mus.step++;
+      }
+    }
+    mus.timer = setTimeout(musicTick, 90);
+  }
+  function musicStart() { mus.on = true; if (!mus.timer) musicTick(); }
+  function musicStop() { mus.on = false; if (mus.timer) { clearTimeout(mus.timer); mus.timer = null; } }
 
   // ---- Donation panel -------------------------------------------------
   function toRaw(xno) {
@@ -432,14 +494,23 @@ footer { color: var(--muted); font-size: 0.8rem; }
     for (i = 0; i < 14; i++) decor.n.push({ x: 30 + Math.random() * (W - 60), y: 30 + Math.random() * (H - 160), ax: 14 + Math.random() * 24, ay: 14 + Math.random() * 24, p: Math.random() * 6 });
   })();
 
-  var best = parseInt(lsGet("fc-best", "0"), 10) || 0;
+  var diff = lsGet("fc-diff", "normal"); if (["easy", "normal", "hard"].indexOf(diff) < 0) diff = "normal";
+  var DN = ["easy", "normal", "hard"], bests = {}, bestLvls = {};
+  DN.forEach(function (d) {
+    bests[d] = parseInt(lsGet("fc-best-" + d, d === "normal" ? lsGet("fc-best", "0") : "0"), 10) || 0;
+    bestLvls[d] = parseInt(lsGet("fc-bestlevel-" + d, d === "normal" ? lsGet("fc-bestlevel", "1") : "1"), 10) || 1;
+  });
+  function topBest() { return Math.max(bests.easy, bests.normal, bests.hard); }
+  var best = bests[diff];
   $("best").textContent = best;
 
   // ---- Best score and wallet skins ------------------------------------------
-  var bestLevel = parseInt(lsGet("fc-bestlevel", "1"), 10) || 1;
+  var bestLevel = bestLvls[diff];
   function renderBest() {
     $("best-big").textContent = best;
-    $("best-sub").textContent = "Highest level " + bestLevel;
+    var nm = diff.charAt(0).toUpperCase() + diff.slice(1);
+    $("best-sub").textContent = nm + " · highest level " + bestLevel;
+    $("best-all").textContent = "Easy " + bests.easy + " · Normal " + bests.normal + " · Hard " + bests.hard + ". Saved on this device. Beat your best to unlock new wallet skins.";
   }
   renderBest();
 
@@ -529,7 +600,7 @@ footer { color: var(--muted); font-size: 0.8rem; }
   var paidOwned = (function () {
     try { var a = JSON.parse(lsGet("fc-paid", "[]")); return Array.isArray(a) ? a : []; } catch (e) { return []; }
   })();
-  function owned(sk) { return sk.paid ? paidOwned.indexOf(sk.id) >= 0 : best >= sk.at; }
+  function owned(sk) { return sk.paid ? paidOwned.indexOf(sk.id) >= 0 : topBest() >= sk.at; }
   var skinId = lsGet("fc-skin", "classic");
   if (!owned(skinById(skinId))) skinId = "classic";
   var buying = null, qr3 = null;
@@ -577,12 +648,19 @@ footer { color: var(--muted); font-size: 0.8rem; }
       box.appendChild(btn);
     });
     $("skin-note").textContent = (next
-      ? "Best score on this device: " + best + ". Next score skin unlocks at " + next.at + " points."
+      ? "Best score on this device: " + topBest() + ". Next score skin unlocks at " + next.at + " points."
       : "All score skins unlocked.") + " Silly skins cost 0.1 XNO each and stay unlocked on this device.";
   }
   renderSkins();
   $("copy3").addEventListener("click", function () { copyAddress($("status3")); });
   $("buy-cancel").addEventListener("click", closeBuy);
+  $("try3").addEventListener("click", function () {
+    if (!buying) return;
+    trial = buying.id;
+    $("status3").textContent = buying.name + " is on for your next game only.";
+    $("skin-note").textContent = "Trying " + buying.name + " for one game. Press Play!";
+    try { $("board").scrollIntoView({ behavior: "smooth", block: "center" }); } catch (e) {}
+  });
   $("buy-ok").addEventListener("click", function () {
     if (!buying) return;
     var got = buying;
@@ -607,6 +685,7 @@ footer { color: var(--muted); font-size: 0.8rem; }
     item("Ӿ", GOLD, true, "Gold coin: 5 points", "#5c3a00");
     item("♥", "var(--bad)", true, "Heart: gives back a life");
     item("FEE", "var(--bad)", false, "Fee: costs a life");
+    item("AUDIT", "#3b0d0d", false, "Audit: rare dark fee, costs 2 lives");
     var desc = {
       magnet: "Pulls coins and hearts towards you",
       shield: "Blocks one fee",
@@ -635,17 +714,68 @@ footer { color: var(--muted); font-size: 0.8rem; }
   $("rule-skins").textContent = SKINS.filter(function (s) { return !s.paid && s.at > 0; })
     .map(function (s) { return s.name + " " + s.at; }).join(", ");
 
-  var PW = 104, PH = 38, PY = H - 58;
+  var AW = 104, AH = 38;               // wallet art space
+  var PW = 94, PH = 34, PY = H - 56;   // 10% smaller wallet
+  var DIFFS = {
+    easy:   { spd: 0.85, fee: -0.05, spawn: 1.15, auditL: 8 },
+    normal: { spd: 1,    fee: 0,     spawn: 1,    auditL: 5 },
+    hard:   { spd: 1.15, fee: 0.08,  spawn: 0.85, auditL: 4 }
+  };
+  var trial = null;
   var st = {
     run: false, score: 0, lives: 3, px: W / 2, pw: PW, items: [], spawn: 0, last: 0, frame: 0, keys: {}, t: 0,
     caught: 0, streak: 0, level: 1, texts: [], banner: null, shake: 0, bump: 0,
-    intro: 0, introLines: null, continued: false, lastScore: 0, lastLevel: 1, paused: false, frenzy: 0,
+    rain: 0, rainCaught: 0, toast: null, savedShield: 0, intro: 0, introLines: null, continued: false, lastScore: 0, lastLevel: 1, paused: false, frenzy: 0,
     fx: { magnet: 0, shield: 0, slow: 0, grow: 0, mini: 0, feeless: 0 }
   };
 
   function livesText() { return "♥".repeat(Math.max(0, st.lives)) + "·".repeat(Math.max(0, 3 - st.lives)); }
   function mult() { return Math.min(5, 1 + Math.floor(st.streak / 6)); }
   function levelOf() { return 1 + Math.floor(st.caught / 9); }
+  function renderDiff() {
+    document.querySelectorAll("#diff button").forEach(function (b) { b.setAttribute("aria-pressed", b.getAttribute("data-d") === diff ? "true" : "false"); });
+  }
+  renderDiff();
+  document.querySelectorAll("#diff button").forEach(function (b) {
+    b.addEventListener("click", function () {
+      diff = b.getAttribute("data-d"); lsSet("fc-diff", diff); renderDiff();
+      best = bests[diff]; bestLevel = bestLvls[diff]; $("best").textContent = best; renderBest();
+    });
+  });
+
+  // ---- Badges ----
+  var BADGES = [
+    { id: "frenzy", name: "Frenzy!", d: "Start a frenzy" },
+    { id: "l5", name: "Getting warm", d: "Reach level 5" },
+    { id: "l10", name: "Double digits", d: "Reach level 10" },
+    { id: "l15", name: "Fee dodger", d: "Reach level 15" },
+    { id: "s50", name: "On fire", d: "A 50-catch streak" },
+    { id: "brocc", name: "Eat your greens", d: "Catch a broccoli" },
+    { id: "shield", name: "Not today", d: "Block a fee with a shield" },
+    { id: "rain", name: "Rainmaker", d: "Catch 12 coins in one coin rain" },
+    { id: "k1000", name: "Four digits", d: "Score 1000 in one run" },
+    { id: "hard10", name: "Brave", d: "Reach level 10 on Hard" }
+  ];
+  var gotB = (function () { try { var a = JSON.parse(lsGet("fc-badges", "[]")); return Array.isArray(a) ? a : []; } catch (e) { return []; } })();
+  function renderBadges() {
+    var box = $("badges"); box.textContent = "";
+    BADGES.forEach(function (b) {
+      var on = gotB.indexOf(b.id) >= 0;
+      var d = document.createElement("div"); d.className = "badge " + (on ? "on" : "off");
+      var n = document.createElement("b"); n.textContent = b.name;
+      var t = document.createElement("span"); t.textContent = on ? "Earned" : b.d;
+      d.appendChild(n); d.appendChild(t); box.appendChild(d);
+    });
+    $("badge-note").textContent = gotB.length + " of " + BADGES.length + " earned. Saved on this device.";
+  }
+  renderBadges();
+  function award(id) {
+    if (gotB.indexOf(id) >= 0) return;
+    gotB.push(id); lsSet("fc-badges", JSON.stringify(gotB)); renderBadges();
+    var b = BADGES.filter(function (x) { return x.id === id; })[0];
+    st.toast = { text: "BADGE: " + b.name, t: 2.2 };
+  }
+
   function updateHud() {
     $("score").textContent = st.score;
     $("lives").textContent = livesText();
@@ -662,7 +792,7 @@ footer { color: var(--muted); font-size: 0.8rem; }
     audio();
     st.run = true; st.score = 0; st.lives = 3; st.items = []; st.spawn = 0.4; st.px = W / 2; st.last = performance.now();
     st.caught = 0; st.streak = 0; st.level = 1; st.texts = []; st.banner = null; st.shake = 0; st.bump = 0;
-    st.continued = false; st.pw = PW; resetFx();
+    st.continued = false; st.pw = PW; resetFx(); st.rain = 0; st.rainCaught = 0; st.toast = null;
     st.intro = 1.7; st.introLines = [["CATCH COINS", "accent"], ["AVOID FEES", "bad"]];
     updateHud();
     $("overlay").hidden = true;
@@ -671,6 +801,7 @@ footer { color: var(--muted); font-size: 0.8rem; }
     scrollToBoard();
     sfx.start();
     setPauseUi();
+    musicStart();
     requestAnimationFrame(loop);
   }
   function resume() {
@@ -683,17 +814,20 @@ footer { color: var(--muted); font-size: 0.8rem; }
     scrollToBoard();
     sfx.extra();
     setPauseUi();
+    musicStart();
     requestAnimationFrame(loop);
   }
   function end() {
-    st.run = false;
+    st.run = false; musicStop();
+    if (trial) { trial = null; renderSkins(); }
     var finalScore = st.score;
     st.lastScore = finalScore; st.lastLevel = st.level;
-    var isBest = finalScore > best, oldBest = best;
-    if (isBest) { best = finalScore; $("best").textContent = best; lsSet("fc-best", best); }
-    if (st.level > bestLevel) { bestLevel = st.level; lsSet("fc-bestlevel", bestLevel); }
+    if (finalScore >= 1000) award("k1000");
+    var isBest = finalScore > best, oldBest = topBest();
+    if (isBest) { best = finalScore; bests[diff] = best; $("best").textContent = best; lsSet("fc-best-" + diff, best); }
+    if (st.level > bestLevel) { bestLevel = st.level; bestLvls[diff] = bestLevel; lsSet("fc-bestlevel-" + diff, bestLevel); }
     renderBest();
-    var newSkins = SKINS.filter(function (s) { return s.at > oldBest && s.at <= best; });
+    var newSkins = SKINS.filter(function (s) { return s.at > oldBest && s.at <= topBest(); });
     var unlockNote = newSkins.length ? "New wallet skin unlocked: " + newSkins.map(function (s) { return s.name; }).join(", ") + "." : "";
     if (isBest) renderSkins();
     sfx.over();
@@ -710,7 +844,11 @@ footer { color: var(--muted); font-size: 0.8rem; }
   }
 
   function spawnOne() {
-    var L = st.level;
+    var L = st.level, D = DIFFS[diff];
+    if (st.rain > 0) {
+      st.items.push({ x: 24 + Math.random() * (W - 48), y: -26, vy: 170 + Math.random() * 60, vx: 0, type: Math.random() < 0.12 ? "gold" : "coin", rain: true });
+      return;
+    }
     var noBadge = !st.items.some(function (i) { return i.type === "pu"; });
     if (L >= 3 && noBadge && Math.random() < 0.02) {
       st.items.push({ x: 30 + Math.random() * (W - 60), y: -26, vy: 140 + Math.min(L, 10) * 8, vx: 0, type: "pu", kind: "feeless" });
@@ -720,38 +858,42 @@ footer { color: var(--muted); font-size: 0.8rem; }
       st.items.push({ x: 30 + Math.random() * (W - 60), y: -26, vy: 130 + Math.min(L, 10) * 8, vx: 0, type: "pu", kind: pickKind() });
       return;
     }
-    var feeP = Math.min(0.45, 0.28 + (L - 1) * 0.02);
+    var feeP = Math.min(0.35 + D.fee, 0.26 + D.fee + (L - 1) * 0.015);
     var r = Math.random(), type;
     if (r < feeP) type = "fee";
     else if (r < feeP + 0.07) type = "gold";
     else if (st.lives < 3 && r < feeP + 0.11) type = "heart";
     else type = "coin";
-    if (type === "fee" && st.fx.feeless > 0) type = "coin";
-    var base = Math.min(560, 130 + (L - 1) * 26);
+    if (type === "fee" && L >= D.auditL && Math.random() < 0.12) type = "audit";
+    if ((type === "fee" || type === "audit") && st.fx.feeless > 0) type = "coin";
+    var base = Math.min(430, 130 + (L - 1) * 22) * D.spd;
     var vy = base + Math.random() * 50;
     if (type === "gold") vy *= 1.15;
     if (type === "heart") vy *= 0.85;
+    if (type === "audit") vy *= 0.85;
     var vx = 0;
     if (type === "fee" && L >= 3 && Math.random() < 0.6) {
-      vx = (Math.random() < 0.5 ? -1 : 1) * Math.min(110, 30 + L * 6);
+      vx = (Math.random() < 0.5 ? -1 : 1) * Math.min(90, 30 + L * 5);
     }
     st.items.push({ x: 24 + Math.random() * (W - 48), y: -26, vy: vy, vx: vx, type: type });
   }
   function spawn() {
-    var L = st.level;
+    var L = st.level, D = DIFFS[diff];
+    if (st.rain > 0) { spawnOne(); st.spawn = 0.17; return; }
     spawnOne();
-    if (L >= 3 && Math.random() < 0.18) spawnOne();
-    st.spawn = Math.max(0.2, 0.8 - (L - 1) * 0.06);
+    if (L >= 3 && Math.random() < (L >= 10 ? 0.08 : 0.18)) spawnOne();
+    st.spawn = Math.max(0.3, 0.8 - (L - 1) * 0.05) * D.spawn;
   }
-  var SIZE = { coin: [14, 14], gold: [17, 17], heart: [14, 14], fee: [20, 16], pu: [22, 13] };
+  var SIZE = { coin: [14, 14], gold: [17, 17], heart: [14, 14], fee: [17, 14], audit: [19, 15], pu: [22, 13] };
 
   function activate(kind) {
     st.fx[kind] = PU[kind].dur;
     if (kind === "grow") st.fx.mini = 0;
     if (kind === "mini") st.fx.grow = 0;
-    if (kind === "feeless") st.items.forEach(function (it) { if (it.type === "fee") { it.type = "coin"; it.vx = 0; } });
+    if (kind === "feeless") st.items.forEach(function (it) { if (it.type === "fee" || it.type === "audit") { it.type = "coin"; it.vx = 0; } });
     st.bump = 1;
     floatText(st.px, PY - 8, PU[kind].name, PU[kind].color);
+    if (kind === "feeless") award("brocc");
     sfx.power();
   }
 
@@ -777,6 +919,8 @@ footer { color: var(--muted); font-size: 0.8rem; }
     for (var key in fx) { if (fx[key] > 0) fx[key] = Math.max(0, fx[key] - dt); }
     if (st.frenzy > 0) st.frenzy = Math.max(0, st.frenzy - dt);
     var sdt = dt * (fx.slow > 0 ? 0.5 : 1);
+    if (st.rain > 0) { st.rain = Math.max(0, st.rain - dt); if (st.rain === 0) { st.banner = { text: "RAIN OVER", sub: "fees are back", t: 1.2 }; if (st.rainCaught >= 12) award("rain"); } }
+    if (st.toast) { st.toast.t -= dt; if (st.toast.t <= 0) st.toast = null; }
     st.spawn -= sdt; if (st.spawn <= 0) spawn();
     st.bump = Math.max(0, st.bump - dt * 5);
     st.shake = Math.max(0, st.shake - dt);
@@ -801,15 +945,16 @@ footer { color: var(--muted); font-size: 0.8rem; }
       var hit = it.y + hh >= PY && it.y - hh <= PY + PH && Math.abs(it.x - st.px) <= st.pw / 2 + hw * 0.5;
       if (hit) {
         st.items.splice(i, 1);
-        if (it.type === "fee") {
+        if (it.type === "fee" || it.type === "audit") {
           if (fx.shield > 0) {
-            fx.shield = 0; st.shake = 0.12;
+            fx.shield = 0; st.shake = 0.12; award("shield");
             floatText(it.x, PY - 6, "BLOCKED", PU.shield.color);
             sfx.shield();
           } else {
-            st.lives--; st.streak = 0; st.shake = 0.3;
-            floatText(it.x, PY - 6, "FEE", C["--bad"]);
-            sfx.fee();
+            var dmg = it.type === "audit" ? 2 : 1;
+            st.lives -= dmg; st.streak = 0; st.shake = 0.3;
+            floatText(it.x, PY - 6, it.type === "audit" ? "AUDIT -2" : "FEE", C["--bad"]);
+            sfx.fee(); vib(dmg > 1 ? [180, 60, 180] : 120);
             updateHud();
             if (st.lives <= 0) { draw(); end(); return; }
           }
@@ -822,7 +967,9 @@ footer { color: var(--muted); font-size: 0.8rem; }
           activate(it.kind);
         } else {
           var val = it.type === "gold" ? 5 : 1;
-          st.streak++; st.caught++;
+          st.streak++;
+          if (it.rain) st.rainCaught++; else st.caught++;
+          if (st.streak >= 50) award("s50");
           var pts = val * mult() * (fx.mini > 0 ? 2 : 1) * (st.frenzy > 0 ? 2 : 1);
           st.score += pts; st.bump = 1;
           floatText(it.x, PY - 6, "+" + pts, it.type === "gold" ? GOLD : C["--accent"]);
@@ -830,7 +977,7 @@ footer { color: var(--muted); font-size: 0.8rem; }
           if (st.streak % 20 === 0) {
             st.frenzy = 5;
             st.banner = { text: "FRENZY!", sub: "double points for 5 seconds", t: 1.6 };
-            sfx.frenzy();
+            sfx.frenzy(); vib([40, 40, 40, 40, 80]); award("frenzy");
           }
           var nl = levelOf();
           if (nl > st.level) {
@@ -838,6 +985,13 @@ footer { color: var(--muted); font-size: 0.8rem; }
             st.level = nl;
             st.banner = { text: "LEVEL " + nl, sub: newStage ? STAGES[stageOf(nl)].name : "faster now", t: 1.6 };
             sfx.level();
+            if (nl >= 5) award("l5");
+            if (nl >= 10) { award("l10"); if (diff === "hard") award("hard10"); }
+            if (nl >= 15) award("l15");
+            if (nl % 4 === 0) {
+              st.rain = 4; st.rainCaught = 0;
+              st.banner = { text: "COIN RAIN!", sub: "no fees for a few seconds", t: 1.6 };
+            }
           }
           updateHud();
         }
@@ -898,22 +1052,22 @@ footer { color: var(--muted); font-size: 0.8rem; }
   function drawWallet() {
     ctx.save();
     ctx.translate(st.px, PY + PH / 2);
-    var s = st.bump * 0.08, sx = st.pw / PW;
-    ctx.scale((1 + s) * sx, 1 - s);
-    ctx.translate(-PW / 2, -PH / 2);
-    var sk = skinById(skinId);
+    var s = st.bump * 0.08, sx = st.pw / AW;
+    ctx.scale((1 + s) * sx, (1 - s) * (PH / AH));
+    ctx.translate(-AW / 2, -AH / 2);
+    var sk = skinById(trial || skinId);
     if (sk.art) {
       sk.art(ctx, st.t);
     } else {
       var bodyC = sk.body || C["--ink"], claspC = sk.clasp || C["--accent"];
-      ctx.fillStyle = bodyC; rr(0, 6, PW, PH - 6, 8); ctx.fill();
-      ctx.fillStyle = bodyC; rr(0, 0, PW, 14, 7); ctx.fill();
-      ctx.fillStyle = C["--field"]; rr(9, 3.5, PW - 18, 6, 3); ctx.fill();
+      ctx.fillStyle = bodyC; rr(0, 6, AW, AH - 6, 8); ctx.fill();
+      ctx.fillStyle = bodyC; rr(0, 0, AW, 14, 7); ctx.fill();
+      ctx.fillStyle = C["--field"]; rr(9, 3.5, AW - 18, 6, 3); ctx.fill();
       ctx.strokeStyle = C["--field"]; ctx.lineWidth = 1.5; ctx.setLineDash([4, 3]);
-      ctx.beginPath(); ctx.moveTo(8, PH - 9); ctx.lineTo(PW - 36, PH - 9); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(8, AH - 9); ctx.lineTo(AW - 36, AH - 9); ctx.stroke();
       ctx.setLineDash([]);
-      ctx.fillStyle = claspC; rr(PW - 30, 16, 32, 16, 5); ctx.fill();
-      ctx.fillStyle = bodyC; ctx.beginPath(); ctx.arc(PW - 18, 24, 3.2, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = claspC; rr(AW - 30, 16, 32, 16, 5); ctx.fill();
+      ctx.fillStyle = bodyC; ctx.beginPath(); ctx.arc(AW - 18, 24, 3.2, 0, Math.PI * 2); ctx.fill();
     }
     ctx.restore();
     if (st.fx.shield > 0) {
@@ -942,9 +1096,15 @@ footer { color: var(--muted); font-size: 0.8rem; }
     var x = it.x, y = it.y;
     ctx.textAlign = "center"; ctx.textBaseline = "middle";
     if (it.type === "fee") {
-      ctx.fillStyle = C["--bad"]; ctx.fillRect(x - 20, y - 16, 40, 32);
-      ctx.fillStyle = "#fff"; ctx.font = "800 13px 'IBM Plex Mono', monospace";
+      ctx.fillStyle = C["--bad"]; ctx.fillRect(x - 17, y - 13.5, 34, 27);
+      ctx.fillStyle = "#fff"; ctx.font = "800 11px 'IBM Plex Mono', monospace";
       ctx.fillText("FEE", x, y + 1);
+    } else if (it.type === "audit") {
+      ctx.fillStyle = "#3b0d0d"; ctx.fillRect(x - 21, y - 14, 42, 28);
+      ctx.strokeStyle = GOLD; ctx.lineWidth = 2; ctx.strokeRect(x - 20, y - 13, 40, 26);
+      ctx.fillStyle = GOLD; ctx.font = "800 10px 'IBM Plex Mono', monospace";
+      ctx.fillText("AUDIT", x, y - 3);
+      ctx.fillStyle = "#fff"; ctx.fillText("-2 ♥", x, y + 8);
     } else if (it.type === "gold") {
       ctx.fillStyle = GOLD; ctx.beginPath(); ctx.arc(x, y, 17, 0, Math.PI * 2); ctx.fill();
       ctx.strokeStyle = GOLD_DARK; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(x, y, 13, 0, Math.PI * 2); ctx.stroke();
@@ -1012,6 +1172,18 @@ footer { color: var(--muted); font-size: 0.8rem; }
       ctx.fillText(st.banner.sub, W / 2, 138);
       ctx.globalAlpha = 1;
     }
+    if (st.toast) {
+      ctx.globalAlpha = Math.min(1, st.toast.t / 0.4);
+      ctx.fillStyle = GOLD; ctx.font = "800 15px 'IBM Plex Mono', monospace";
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillText(st.toast.text, W / 2, 176);
+      ctx.globalAlpha = 1;
+    }
+    if (st.rain > 0) {
+      ctx.fillStyle = GOLD; ctx.font = "800 11px 'IBM Plex Mono', monospace";
+      ctx.textAlign = "right"; ctx.textBaseline = "middle";
+      ctx.fillText("COIN RAIN " + Math.ceil(st.rain) + "s", W - 10, 70);
+    }
     if (st.run && st.intro > 0 && st.introLines) {
       ctx.globalAlpha = Math.min(1, st.intro / 0.3);
       ctx.textAlign = "center"; ctx.textBaseline = "middle";
@@ -1033,14 +1205,14 @@ footer { color: var(--muted); font-size: 0.8rem; }
   }
   function pauseGame() {
     if (!st.run || st.paused) return;
-    st.paused = true; st.keys = {};
+    st.paused = true; st.keys = {}; musicStop();
     $("normal").hidden = true; $("paystep").hidden = true; $("pausebox").hidden = false;
     $("overlay").hidden = false;
     setPauseUi();
   }
   function unpauseGame() {
     if (!st.paused) return;
-    st.paused = false;
+    st.paused = false; musicStart();
     $("pausebox").hidden = true;
     $("overlay").hidden = true;
     st.last = performance.now();
@@ -1063,7 +1235,7 @@ footer { color: var(--muted); font-size: 0.8rem; }
     $("cont").hidden = true; $("finish").hidden = true; $("to-donate").hidden = false;
   });
   $("share").addEventListener("click", function () {
-    var msg = "I scored " + st.lastScore + " on Feeless Catch (level " + st.lastLevel + "). Can you beat it? " + GAME_URL;
+    var msg = "I scored " + st.lastScore + " on Feeless Catch (" + diff + ", level " + st.lastLevel + "). Can you beat it? " + GAME_URL;
     copyText(msg,
       function () { $("ov-board").textContent = "Copied. Paste it into a message to challenge a friend."; },
       function () { $("ov-board").textContent = msg; });
